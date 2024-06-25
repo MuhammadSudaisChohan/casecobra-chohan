@@ -64,6 +64,17 @@ export const createCheckoutSession = async ({
     },
   });
 
+  const shippingCostInDollars = 3.00;
+  const shippingCostInCents = shippingCostInDollars * 100;
+
+  const shippingPrice = await stripe.prices.create({
+    currency: "USD",
+    unit_amount: shippingCostInCents,
+    product_data: {
+      name: "Shipping Cost",
+    },
+  });
+
   const stripeSession = await stripe.checkout.sessions.create({
     success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/thank-you?orderId=${order.id}`,
     cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/configure/preview?id=${configuration.id}`,
@@ -76,7 +87,10 @@ export const createCheckoutSession = async ({
       userId: user.id,
       orderId: order.id,
     },
-    line_items: [{ price: product.default_price as string, quantity: 1 }],
+    line_items: [
+      { price: product.default_price as string, quantity: 1 },
+      { price: shippingPrice.id, quantity: 1 },
+    ],
   });
 
   return { url: stripeSession.url };
